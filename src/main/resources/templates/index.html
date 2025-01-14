@@ -68,10 +68,11 @@
             <input type="text" class="form-control" id="leaveRequest" oninput="resetError()"/>
             <div class='text-danger' id='error_leaveRequest' style='display:none;'></div>
             </div>
-                        <div class="form-group">
+            <div class="form-group">
             <label>Durasi Cuti<span class="text-danger"></span></label>
             <input type="text" class="form-control" id="durasi"/>
-                        <div class="form-group">
+            <div class='text-danger' id='error_durasi' style='display:none;'></div>
+            <div class="form-group">
             <label>Contact<span class="text-danger">*</span></label>
             <input type="text" class="form-control" id="contact" oninput="resetError()"/>
             <div class='text-danger' id='error_contact' style='display:none;'></div>
@@ -98,6 +99,7 @@
     }
 
     const openModal = () => {
+        console.log("berhasil open modal")
         $("#modal").modal("show");
         $(".modal-body").html(form);
         $(".modal-title").text("Tambah Employe");
@@ -155,65 +157,18 @@
 
         });
     }
-    const searchByName = () => {
-        let searchKey = $("#searchBar").val();
-        if (searchKey) {
-            $.ajax({
-                url: `/api/employe/search?name=${searchKey}`,
-                type: "get",
-                contentType: "application/json",
-                success: function (responseBody) {
-                    let resEmploye = responseBody.data || responseBody;
-                    if (!resEmploye || resEmploye.length === 0) {
-                        $("#isiData").html("<tr><td colspan='4'>Data tidak ditemukan</td></tr>");
-                        return;
-                    }
-                    let str = "";
-                    for (let i = 0; i < resEmploye.length; i++) {
-                        let employe = resEmploye[i];
-                        str += `
-            <tr>
-              <td>${1 + i}</td>
-              <td>${employe.fullname}</td>
-              <td>${employe.leaveName}</td>
-              <td>${employe.leaveRequest}</td>
-              <td>${employe.durasi}</td>
-              <td>${employe.contact}</td>
-              <td>
-                <button class='btn btn-warning btn-md'>U</button>
-                <button class='btn btn-danger btn-md'>H</button>
-              </td>
-            </tr>
-          `;
-                    }
-                    $("#paging").hide();
-                    $("#isiData").html(str);
-                },
-
-                error: function (jqXHR) {
-                    let str = `<tr>
-      <td id="not_found_employe" colspan = 4 style='display:none;'></td>
-      </tr>`;
-                    $("#isiData").html(str);
-                    handleErrors(jqXHR);
-                },
-            });
-        } else {
-            fetchDataEmploye(1, 5, isAsc ? "asc" : "desc");
-        }
-    }
 
     const saveEmploye = () => {
-        let name = $("#namaEmploye").val();
-        let leaveName = $("#leaveName").val();
-        let leaveRequest = $("#leaveRequest").val();
+        let fullname = $("#namaEmploye").val();
+        let alasanCuti = $("#leaveName").val();
+        let jenisCuti = $("#leaveRequest").val();
         let contact = $("#contact").val();
         let durasi = $("#durasi").val();
 
         let formData = JSON.stringify({
-            name,
-            leaveName,
-            leaveRequest,
+            fullname,
+            alasanCuti,
+            jenisCuti,
             contact,
             durasi
         });
@@ -235,124 +190,6 @@
         });
     }
 
-    const f_edit = (id) => {
-        $(".modal-body").html(form);
-        $.ajax({
-            url: `/api/employe/${id}`,
-            type: "get",
-            contentType: "application/json",
-            success: function (responseBody) {
-                let employe = responseBody.data || responseBody;
-                if (!employe) {
-                    alert("Data tidak ditemukan!");
-                    return;
-                }
-                $("#employeId").val(employe.id);
-                $("#namaEmploye").val(employe.name);
-                $("#leaveName").val(employe.leaveName);
-                $("#leaveRequest").val(employe.leaveRequest);
-                $("#durasi").val(employe.durasi);
-                $("#contact").val(employe.contact);
-                $("#modal").modal("show");
-                $(".modal-title").text("Ubah Employe");
-                $("#btnSubmit")
-                    .attr("class", "btn btn-warning")
-                    .off("click")
-                    .on("click", function () {
-                        editEmploye(id);
-                    })
-                    .text("Simpan");
-                $('#btnClose').off("click").on("click", function () {
-                    $('#modal').modal('hide');
-                });
-                $('#btnCloseX').off("click").on("click", function () {
-                    $('#modal').modal('hide');
-                });
-
-            },
-
-        });
-    }
-
-    const editEmploye = (id) => {
-        id = $("#EmployeId").val();
-        let name = $("#namaEmploye").val();
-        let leaveName = $("#leaveName").val();
-        let leaveRequest = $("#leaveRequest").val();
-        let contact = $("#contact").val();
-        let durasi = $("#durasi").val();
-
-        let formData = JSON.stringify({
-            id,
-            name,
-            leaveName,
-            leaveRequest,
-            durasi,
-            contact
-        });
-
-        $.ajax({
-            url: `/api/employe/update`,
-            type: "put",
-            contentType: "application/json",
-            data: formData,
-            success: function () {
-                $("#modal").modal("toggle");
-                fetchDataEmploye(1, 5, isAsc ? "asc" : "desc");
-            },
-            error: function (jqXHR) {
-                handleErrors(jqXHR);
-            },
-        });
-    }
-
-    const f_delete = (id) => {
-        $.ajax({
-            url: `/api/employe/${id}`,
-            type: "get",
-            contentType: "application/json",
-            success: function (responseBody) {
-                let employe = responseBody.data || responseBody;
-                if (!employe) {
-                    alert("Data tidak ditemukan!");
-                    return;
-                }
-                let str = `
-          <div>
-            <p>Anda akan menghapus ${employe.name}?</p>
-          </div>
-        `;
-                $(".modal-body").html(str);
-                $("#modal").modal("show");
-                $(".modal-title").text("Hapus !");
-                $('#btnClose').off("click").on("click", function () {
-                    $('#modal').modal('hide');
-                });
-                $('#btnCloseX').off("click").on("click", function () {
-                    $('#modal').modal('hide');
-                });
-
-                $("#btnSubmit")
-                    .attr("class", "btn btn-danger")
-                    .off("click")
-                    .on("click", function () {
-                        deleteEmploye(id);
-                    })
-                    .text("Ya");
-            },
-        });
-    }
-    const deleteEmploye = (id) => {
-        $.ajax({
-            url: `/api/employe/delete/${id}`,
-            type: "put",
-            contentType: "application/json",
-            success: function () {
-                $("#modal").modal("toggle");
-                fetchDataEmploye(1, 5, isAsc ? "asc" : "desc");
-            },
-        });
-    }
 
     const pagingList = (data) => {
         let nextMove =
@@ -383,19 +220,34 @@
     }
     const handleErrors = (jqXHR) => {
         let response = jqXHR.responseJSON;
-
+        console.log("ini response : ", response)
         if (jqXHR.status === 409 && response) {
 
-            if (response.name) {
-                $("#error_nama").text(response.name).show();
+            if (response.fullname) {
+                $("#error_nama").text(response.fullname).show();
             } else {
                 $("#error_nama").text("").hide();
             }
 
-            if (response.code_va) {
-                $("#error_kode_va").text(response.code_va).show();
+            if (response.contact) {
+                $("#error_contact").text(response.contact).show();
             } else {
-                $("#error_kode_va").text("").hide();
+                $("#error_contact").text("").hide();
+            }
+            if (response.alasanCuti) {
+                $("#error_leaveName").text(response.alasanCuti).show();
+            } else {
+                $("#error_leaveName").text("").hide();
+            }
+            if (response.jenisCuti) {
+                $("#error_leaveRequest").text(response.jenisCuti).show();
+            } else {
+                $("#error_leaveRequest").text("").hide();
+            }
+            if (response.durasi) {
+                $("#error_durasi").text(response.durasi).show();
+            } else {
+                $("#error_durasi").text("").hide();
             }
         } else if (jqXHR.status === 404) {
 

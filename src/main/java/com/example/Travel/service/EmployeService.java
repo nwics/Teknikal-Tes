@@ -18,10 +18,13 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import com.example.Travel.dao.BiodataRepository;
 import com.example.Travel.dao.ContactPersonRepository;
+import com.example.Travel.dao.EmployeLeaveDetailRepository;
 import com.example.Travel.dao.EmployeRepository;
 import com.example.Travel.dao.LeaveRepository;
 import com.example.Travel.dao.LeaveRequestRepository;
 import com.example.Travel.dto.EmployeLeaveDTO;
+import com.example.Travel.model.EmployeLeave;
+import com.example.Travel.model.EmployeLeaveDetail;
 import com.example.Travel.model.Employee;
 
 @Service
@@ -41,6 +44,9 @@ public class EmployeService {
 
     @Autowired
     private LeaveRequestRepository leaveRequestRepository;
+
+    @Autowired
+    private EmployeLeaveDetailRepository employeLeaveDetailRepository;
 
     public Map<String, Object> getAllDataEmploye(
             int page, int size, String order) {
@@ -140,42 +146,43 @@ public class EmployeService {
         }
     }
 
-    // public ResponseEntity<?> updateEmploye(@RequestBody Employee employee) {
-    // try {
-    // Optional<Employee> listData = employeRepository.findById(employee.getId());
-    // if (listData.isPresent()) {
-    // Map<String, Object> errors = new HashMap<>();
-    // if (bank.getName().trim().isEmpty()) {
-    // errors.put("name", "Nama wajib diisi");
-    // }
-    // if (bank.getVaCode().trim().isEmpty()) {
-    // errors.put("code_va", "Kode VA wajib diisi");
-    // }
-    // if (mBankRepository.existsByName(bank.getName().trim())) {
-    // errors.put("name", "Nama sudah ada");
-    // }
-    // if (mBankRepository.existsByVaCode(bank.getVaCode().trim())) {
-    // errors.put("code_va", "Kode VA sudah ada");
-    // }
-    // if (!errors.isEmpty()) {
-    // return ResponseEntity.status(HttpStatus.CONFLICT).body(errors);
-    // }
+    public ResponseEntity<?> addEmployeeLeave(@RequestBody EmployeLeaveDTO employeLeaveDTO) {
+        try {
+            Map<String, Object> errors = new HashMap<>();
 
-    // MBank updatedBank = bankData.get();
-    // updatedBank.setName(bank.getName());
-    // updatedBank.setVaCode(bank.getVaCode());
-    // updatedBank.setModifiedBy(1L);
-    // updatedBank.setModifiedOn(LocalDateTime.now());
+            if (employeLeaveDTO.getFullname() == null || employeLeaveDTO.getFullname().trim().isEmpty()) {
+                errors.put("fullname", "Nama lengkap wajib diisi");
+            }
+            if (employeLeaveDTO.getJenisCuti() == null || employeLeaveDTO.getJenisCuti().trim().isEmpty()) {
+                errors.put("jenisCuti", "Jenis cuti wajib diisi");
+            }
+            if (employeLeaveDTO.getAlasanCuti() == null || employeLeaveDTO.getAlasanCuti().trim().isEmpty()) {
+                errors.put("alasanCuti", "Alasan cuti wajib diisi");
+            }
+            if (employeLeaveDTO.getDurasi() == null || employeLeaveDTO.getDurasi().trim().isEmpty()) {
+                errors.put("durasi", "Durasi wajib diisi");
+            }
+            if (employeLeaveDTO.getContact() == null || employeLeaveDTO.getContact().trim().isEmpty()) {
+                errors.put("contact", "Kontak wajib diisi");
+            }
 
-    // return
-    // ResponseEntity.status(HttpStatus.CREATED).body(mBankRepository.save(updatedBank));
-    // }
-    // return ResponseEntity.status(HttpStatus.NOT_FOUND)
-    // .body("Bank dengan id " + bank.getId() + " tidak ditemukan");
-    // } catch (Exception e) {
-    // return
-    // ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
-    // }
-    // }
+            if (!errors.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(errors);
+            }
+            EmployeLeaveDetail employeLeave = new EmployeLeaveDetail(
+                    employeLeaveDTO.getId(),
+                    employeLeaveDTO.getFullname().trim(),
+                    employeLeaveDTO.getJenisCuti().trim(),
+                    employeLeaveDTO.getAlasanCuti().trim(),
+                    employeLeaveDTO.getDurasi().trim(),
+                    employeLeaveDTO.getContact().trim());
+
+            EmployeLeaveDetail savedEmployeLeave = employeLeaveDetailRepository.save(employeLeave);
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(savedEmployeLeave);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+    }
 
 }

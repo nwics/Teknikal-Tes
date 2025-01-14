@@ -8,12 +8,15 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.Travel.dao.EmployeRepository;
+import com.example.Travel.dto.EmployeLeaveDTO;
 import com.example.Travel.service.EmployeService;
 
 @RestController
@@ -46,16 +49,10 @@ public class ApiEmployeController {
         return employeService.getOneEmployee(id);
     }
 
-    @GetMapping("/search")
-    public ResponseEntity<?> getEmployeByName(@RequestParam("name") String name) {
-        return employeService.getEmployeName(name);
-    }
+    @PostMapping("/add")
+    public ResponseEntity<?> addEmploye(@RequestBody EmployeLeaveDTO employeLeaveDTO) {
+        return employeService.addEmployeeLeave(employeLeaveDTO);
 
-    @PutMapping("/delete/{id}")
-    public ResponseEntity<?> deleteOneEmployee(@PathVariable("id") long id) {
-        return employeService.deleteEmploye(id);
     }
-
-    // @PostMapping("/add")
 
 }
