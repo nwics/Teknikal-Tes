@@ -12,9 +12,9 @@ import lombok.Getter;
 import lombok.Setter;
 
 @Entity
-@Table(name = "contact_person")
 @Setter
 @Getter
+@Table(name = "contact_person")
 public class ContactPerson extends BaseEntity {
 
     @Id

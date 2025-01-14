@@ -9,9 +9,405 @@
 
 <body>
     <div layout:fragment="content">
-        <h1>Hello World</h1>
+        <div class="container border rounded">
+            <div class="d-flex justify-content-between">
+                <div class="py-3">
+                    <button class="btn btn-primary" onclick="openModal()">
+                        Tambah Data
+                    </button>
+                </div>
+                <div class="py-3">
+                    <input type="text" class="form-control" placeholder="Search by nama" id="searchBar"
+                        oninput="searchByName()" />
+                </div>
+            </div>
+            <table class="table text-center rounded" border="1">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>
+                            Nama
+                            <a href="#" onclick="sorting()">
+                                <img class="pe-auto" src="/images/sort.svg" alt="" width="20" height="10" />
+                            </a>
+                        </th>
+                        <th>Jenis Cuti</th>
+                        <th>Alasan Cuti</th>
+                        <th>Durasi Cuti</th>
+                        <th>Contact</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="isiData"></tbody>
+            </table>
+            <div id="paging"></div>
+        </div>
     </div>
 
 </body>
 
 </html>
+
+<script>
+    let form = `
+            <form id="employe-form">
+            <div class='modal-body'>
+            <input type="hidden" id="employeId">
+            <div class="form-group">
+            <label>Nama<span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="namaEmploye" oninput="resetError()"/>
+            <div class='text-danger' id='error_nama' style='display:none;'></div>
+            </div>
+            <div class="form-group">
+            <label>Jenis Cuti<span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="leaveName" oninput="resetError()"/>
+            <div class='text-danger' id='error_leaveName' style='display:none;'></div>
+            </div>
+            <div class="form-group">
+            <label>Alasan Cuti<span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="leaveRequest" oninput="resetError()"/>
+            <div class='text-danger' id='error_leaveRequest' style='display:none;'></div>
+            </div>
+                        <div class="form-group">
+            <label>Durasi Cuti<span class="text-danger"></span></label>
+            <input type="text" class="form-control" id="durasi"/>
+                        <div class="form-group">
+            <label>Contact<span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="contact" oninput="resetError()"/>
+            <div class='text-danger' id='error_contact' style='display:none;'></div>
+            </div>
+            </div>
+            </div>
+            </form;
+            `;
+    let isAsc = true;
+    $(function () {
+        fetchDataEmploye(1, 5, isAsc ? "asc" : "desc");
+        $(".modal-body").html(form);
+    });
+    const sorting = () => {
+        isAsc = !isAsc;
+        fetchDataEmploye(1, 5, isAsc ? "asc" : "desc");
+    }
+
+    const resetError = () => {
+        $("#error_nama").text("").hide();
+        $("#error_leaveName").text("").hide();
+        $("#error_leaveRequest").text("").hide();
+        $("#error_contact").text("").hide();
+    }
+
+    const openModal = () => {
+        $("#modal").modal("show");
+        $(".modal-body").html(form);
+        $(".modal-title").text("Tambah Employe");
+        $("#btnSubmit")
+            .off("click")
+            .on("click", function () {
+                saveEmploye();
+            })
+            .text("Simpan")
+            .addClass("btn btn-primary");
+        $('#btnClose').off("click").on("click", function () {
+            $('#modal').modal('hide');
+        });
+        $('#btnCloseX').off("click").on("click", function () {
+            $('#modal').modal('hide');
+        });
+
+    }
+
+    const fetchDataEmploye = (page, size, order) => {
+        $.ajax({
+            url: `/api/employe?page=${page}&size=${size}&order=${order}`,
+            type: "get",
+            contentType: "application/json",
+            success: function (responseBody) {
+                console.log("data berhasil didapatkan")
+                console.log(responseBody)
+                let str = "";
+                let resEmploye = responseBody.data;
+                if (!resEmploye || resEmploye.length === 0) {
+                    str = `<tr><td colspan="4">${responseBody.message || "Data tidak ditemukan"}</td></tr>`;
+                } else {
+                    for (let i = 0; i < resEmploye.length; i++) {
+                        let employe = resEmploye[i];
+                        str += `
+              <tr>
+                <td>${responseBody.offset + 1 + i}</td>
+                <td>${employe.fullname}</td>
+                <td>${employe.jenisCuti}</td>
+                <td>${employe.alasanCuti}</td>
+                <td>${employe.durasi}</td>
+                <td>${employe.contact}</td>
+                <td>
+                  <button class='btn btn-warning btn-md' value=${employe.id} onclick='f_edit(this.value)'>Edit</button>
+                  <button class='btn btn-danger btn-md' value=${employe.id} onclick='f_delete(this.value)'>Hapus</button>
+                </td>
+              </tr>
+            `;
+                    }
+                }
+                $("#isiData").html(str);
+                $("#paging").show();
+                pagingList(responseBody);
+            },
+
+        });
+    }
+    const searchByName = () => {
+        let searchKey = $("#searchBar").val();
+        if (searchKey) {
+            $.ajax({
+                url: `/api/employe/search?name=${searchKey}`,
+                type: "get",
+                contentType: "application/json",
+                success: function (responseBody) {
+                    let resEmploye = responseBody.data || responseBody;
+                    if (!resEmploye || resEmploye.length === 0) {
+                        $("#isiData").html("<tr><td colspan='4'>Data tidak ditemukan</td></tr>");
+                        return;
+                    }
+                    let str = "";
+                    for (let i = 0; i < resEmploye.length; i++) {
+                        let employe = resEmploye[i];
+                        str += `
+            <tr>
+              <td>${1 + i}</td>
+              <td>${employe.fullname}</td>
+              <td>${employe.leaveName}</td>
+              <td>${employe.leaveRequest}</td>
+              <td>${employe.durasi}</td>
+              <td>${employe.contact}</td>
+              <td>
+                <button class='btn btn-warning btn-md'>U</button>
+                <button class='btn btn-danger btn-md'>H</button>
+              </td>
+            </tr>
+          `;
+                    }
+                    $("#paging").hide();
+                    $("#isiData").html(str);
+                },
+
+                error: function (jqXHR) {
+                    let str = `<tr>
+      <td id="not_found_employe" colspan = 4 style='display:none;'></td>
+      </tr>`;
+                    $("#isiData").html(str);
+                    handleErrors(jqXHR);
+                },
+            });
+        } else {
+            fetchDataEmploye(1, 5, isAsc ? "asc" : "desc");
+        }
+    }
+
+    const saveEmploye = () => {
+        let name = $("#namaEmploye").val();
+        let leaveName = $("#leaveName").val();
+        let leaveRequest = $("#leaveRequest").val();
+        let contact = $("#contact").val();
+        let durasi = $("#durasi").val();
+
+        let formData = JSON.stringify({
+            name,
+            leaveName,
+            leaveRequest,
+            contact,
+            durasi
+        });
+        console.log("berhasih disimpan")
+
+        $.ajax({
+            url: `/api/employe/add`,
+            type: "post",
+            contentType: "application/json",
+            data: formData,
+            success: function (response) {
+                console.log("response : ", response)
+                $("#modal").modal("toggle");
+                fetchDataEmploye(1, 5, isAsc ? "asc" : "desc");
+            },
+            error: function (jqXHR) {
+                handleErrors(jqXHR);
+            },
+        });
+    }
+
+    const f_edit = (id) => {
+        $(".modal-body").html(form);
+        $.ajax({
+            url: `/api/employe/${id}`,
+            type: "get",
+            contentType: "application/json",
+            success: function (responseBody) {
+                let employe = responseBody.data || responseBody;
+                if (!employe) {
+                    alert("Data tidak ditemukan!");
+                    return;
+                }
+                $("#employeId").val(employe.id);
+                $("#namaEmploye").val(employe.name);
+                $("#leaveName").val(employe.leaveName);
+                $("#leaveRequest").val(employe.leaveRequest);
+                $("#durasi").val(employe.durasi);
+                $("#contact").val(employe.contact);
+                $("#modal").modal("show");
+                $(".modal-title").text("Ubah Employe");
+                $("#btnSubmit")
+                    .attr("class", "btn btn-warning")
+                    .off("click")
+                    .on("click", function () {
+                        editEmploye(id);
+                    })
+                    .text("Simpan");
+                $('#btnClose').off("click").on("click", function () {
+                    $('#modal').modal('hide');
+                });
+                $('#btnCloseX').off("click").on("click", function () {
+                    $('#modal').modal('hide');
+                });
+
+            },
+
+        });
+    }
+
+    const editEmploye = (id) => {
+        id = $("#EmployeId").val();
+        let name = $("#namaEmploye").val();
+        let leaveName = $("#leaveName").val();
+        let leaveRequest = $("#leaveRequest").val();
+        let contact = $("#contact").val();
+        let durasi = $("#durasi").val();
+
+        let formData = JSON.stringify({
+            id,
+            name,
+            leaveName,
+            leaveRequest,
+            durasi,
+            contact
+        });
+
+        $.ajax({
+            url: `/api/employe/update`,
+            type: "put",
+            contentType: "application/json",
+            data: formData,
+            success: function () {
+                $("#modal").modal("toggle");
+                fetchDataEmploye(1, 5, isAsc ? "asc" : "desc");
+            },
+            error: function (jqXHR) {
+                handleErrors(jqXHR);
+            },
+        });
+    }
+
+    const f_delete = (id) => {
+        $.ajax({
+            url: `/api/employe/${id}`,
+            type: "get",
+            contentType: "application/json",
+            success: function (responseBody) {
+                let employe = responseBody.data || responseBody;
+                if (!employe) {
+                    alert("Data tidak ditemukan!");
+                    return;
+                }
+                let str = `
+          <div>
+            <p>Anda akan menghapus ${employe.name}?</p>
+          </div>
+        `;
+                $(".modal-body").html(str);
+                $("#modal").modal("show");
+                $(".modal-title").text("Hapus !");
+                $('#btnClose').off("click").on("click", function () {
+                    $('#modal').modal('hide');
+                });
+                $('#btnCloseX').off("click").on("click", function () {
+                    $('#modal').modal('hide');
+                });
+
+                $("#btnSubmit")
+                    .attr("class", "btn btn-danger")
+                    .off("click")
+                    .on("click", function () {
+                        deleteEmploye(id);
+                    })
+                    .text("Ya");
+            },
+        });
+    }
+    const deleteEmploye = (id) => {
+        $.ajax({
+            url: `/api/employe/delete/${id}`,
+            type: "put",
+            contentType: "application/json",
+            success: function () {
+                $("#modal").modal("toggle");
+                fetchDataEmploye(1, 5, isAsc ? "asc" : "desc");
+            },
+        });
+    }
+
+    const pagingList = (data) => {
+        let nextMove =
+            data.page + 1 > data.total_pages ? data.total_pages : data.page + 1;
+        let prevMove = data.page - 1 < 1 ? data.page : data.page - 1;
+        let size = data.per_page;
+        let lengthList = "";
+
+        for (let i = 1; i <= data.total_pages; i++) {
+            lengthList += `<li class="page-item"><a href="#" class="page-link pe-auto" onclick='fetchDataBank(${i},${size}, isAsc ? "asc" : "desc")'>${i}</a></li>`;
+        }
+        let str = `
+    <nav aria-label="Page navigation example">
+  <ul class="pagination">
+   <li class="page-item"><a href="#" class="page-link pe-auto" onclick='fetchDataBank(${prevMove},${size},isAsc ? "asc" : "desc")'>Previous</a></li>
+    ${lengthList}
+    <li class="page-item"><a href="#" class="page-link mr-2" onclick='fetchDataBank(${nextMove},${size}, isAsc ? "asc" : "desc")'>Next</a></li>
+    <li><select id='rowPerPage' class="form-control"onchange='fetchDataBank(${data.page},this.value, isAsc ? "asc" : "desc")'>
+          <option>Select Row</option>  
+            <option value = 5>5</option>
+            <option value = 10>10</option>
+            <option value = 15>15</option>
+          </select></li>
+    </ul>
+</nav>
+    `;
+        $("#paging").html(str);
+    }
+    const handleErrors = (jqXHR) => {
+        let response = jqXHR.responseJSON;
+
+        if (jqXHR.status === 409 && response) {
+
+            if (response.name) {
+                $("#error_nama").text(response.name).show();
+            } else {
+                $("#error_nama").text("").hide();
+            }
+
+            if (response.code_va) {
+                $("#error_kode_va").text(response.code_va).show();
+            } else {
+                $("#error_kode_va").text("").hide();
+            }
+        } else if (jqXHR.status === 404) {
+
+            $("#not_found_bank").text("Data tidak ditemukan").show();
+        } else {
+
+            alert(
+                "An unexpected error occurred: " + jqXHR.status + " - " + jqXHR.statusText
+            );
+        }
+    }
+
+
+
+</script>

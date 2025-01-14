@@ -13,7 +13,7 @@ import lombok.Setter;
 @Getter
 @Entity
 @Table(name = "travel_type")
-public class TravelType {
+public class TravelType extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
